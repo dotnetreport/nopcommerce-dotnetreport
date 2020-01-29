@@ -1,0 +1,11 @@
+﻿{
+  "Group": "Reports",
+  "FriendlyName": "Custom Ad Hoc Report Builder",
+  "SystemName": "Reports.DotnetReport",
+  "Version": "3.0",
+  "SupportedVersions": [ "4.20" ],
+  "Author": "dotnet Report Team",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Reports.DotnetReport.dll",
+  "Description": "This plugin offers users the ability to create completely customized reports and dashboards to compliment built in reports"
+}
