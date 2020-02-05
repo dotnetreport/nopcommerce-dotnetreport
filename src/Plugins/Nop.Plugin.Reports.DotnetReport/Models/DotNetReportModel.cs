@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Nop.Core.Data;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -9,7 +11,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ReportBuilder.Web.Core.Models
+namespace Nop.Plugin.Reports.DotnetReport.Models
 {
     public class DotNetReportModel
     {
@@ -242,15 +244,35 @@ namespace ReportBuilder.Web.Core.Models
         public bool CanUseAdminMode { get; set; }
     }
 
-    public class DotNetReportHelper
+
+    public class DotNetReportConfig : DotNetReportSettings
     {
-        public static byte[] GetExcelFile(string reportSql, string connectKey, string reportName)
+        [Required]
+        public string ContactEmail { get; set; }
+        [Required]
+        public string ContactName { get; set; }
+        public string ContactPhoneNumber { get; set; }
+        public string BusinessName { get; set; }
+        public string BusinessWebsite { get; set; }
+
+        [Required]
+        public string DataConnectionName { get; set; }
+        [Required]
+        public string DataConnectKey { get; set; }
+
+        public string DefaultSetup { get; set; }
+    }
+
+    public class DotNetReportHelper
+    {        
+        public static byte[] GetExcelFile(string reportSql, string connectKey, string reportName, string privateKey)
         {
-            var sql = Decrypt(reportSql);
+            var sql = Decrypt(reportSql, privateKey);
 
             // Execute sql
             var dt = new DataTable();
-            using (var conn = new SqlConnection(Startup.StaticConfig.GetConnectionString(connectKey)))
+            var dataSettings = DataSettingsManager.LoadSettings();
+            using (var conn = new SqlConnection(dataSettings.DataConnectionString))
             {
                 conn.Open();
                 var command = new SqlCommand(sql, conn);
@@ -259,15 +281,15 @@ namespace ReportBuilder.Web.Core.Models
                 adapter.Fill(dt);
             }
 
-            using (ExcelPackage xp = new ExcelPackage())
+            using (var xp = new ExcelPackage())
             {
 
-                ExcelWorksheet ws = xp.Workbook.Worksheets.Add(reportName);
+                var ws = xp.Workbook.Worksheets.Add(reportName);
 
-                int rowstart = 1;
-                int colstart = 1;
-                int rowend = rowstart;
-                int colend = dt.Columns.Count;
+                var rowstart = 1;
+                var colstart = 1;
+                var rowend = rowstart;
+                var colend = dt.Columns.Count;
 
                 ws.Cells[rowstart, colstart, rowend, colend].Merge = true;
                 ws.Cells[rowstart, colstart, rowend, colend].Value = reportName;
@@ -279,7 +301,7 @@ namespace ReportBuilder.Web.Core.Models
                 ws.Cells[rowstart, colstart].LoadFromDataTable(dt, true);
                 ws.Cells[rowstart, colstart, rowstart, colend].Style.Font.Bold = true;
 
-                int i = 1;
+                var i = 1;
                 foreach (DataColumn dc in dt.Columns)
                 {
                     if (dc.DataType == typeof(decimal))
@@ -295,14 +317,16 @@ namespace ReportBuilder.Web.Core.Models
             }
         }
 
-        public static string GetXmlFile(string reportSql, string connectKey, string reportName)
+        public static string GetXmlFile(string reportSql, string connectKey, string reportName, string privateKey)
         {
-            var sql = Decrypt(reportSql);
+            var sql = Decrypt(reportSql, privateKey);
 
             // Execute sql
             var dt = new DataTable();
             var ds = new DataSet();
-            using (var conn = new SqlConnection(Startup.StaticConfig.GetConnectionString(connectKey)))
+
+            var dataSettings = DataSettingsManager.LoadSettings();
+            using (var conn = new SqlConnection(dataSettings.DataConnectionString))
             {
                 conn.Open();
                 var command = new SqlCommand(sql, conn);
@@ -314,9 +338,7 @@ namespace ReportBuilder.Web.Core.Models
             ds.Tables.Add(dt);
             ds.DataSetName = "data";
             foreach (DataColumn c in dt.Columns)
-            {
                 c.ColumnName = c.ColumnName.Replace(" ", "_").Replace("(", "").Replace(")", "");
-            }
             dt.TableName = "item";
             var xml = ds.GetXml();
             return xml;
@@ -325,30 +347,26 @@ namespace ReportBuilder.Web.Core.Models
         /// <summary>
         /// Method to Deycrypt encrypted sql statement. PLESE DO NOT CHANGE THIS METHOD
         /// </summary>
-        public static string Decrypt(string encryptedText)
+        public static string Decrypt(string encryptedText, string privateKey)
         {
-            byte[] initVectorBytes = Encoding.ASCII.GetBytes("yk0z8f39lgpu70gi"); // PLESE DO NOT CHANGE THIS KEY
-            int keysize = 256;
+            var initVectorBytes = Encoding.ASCII.GetBytes("yk0z8f39lgpu70gi"); // PLESE DO NOT CHANGE THIS KEY
+            var keysize = 256;
 
-            byte[] cipherTextBytes = Convert.FromBase64String(encryptedText.Replace("%3D", "="));
-            var passPhrase = Startup.StaticConfig.GetValue<string>("dotNetReport:privateApiToken").ToLower();
-            using (PasswordDeriveBytes password = new PasswordDeriveBytes(passPhrase, null))
+            var cipherTextBytes = Convert.FromBase64String(encryptedText.Replace("%3D", "="));
+            var passPhrase = privateKey.ToLower();
+            using (var password = new PasswordDeriveBytes(passPhrase, null))
             {
-                byte[] keyBytes = password.GetBytes(keysize / 8);
-                using (RijndaelManaged symmetricKey = new RijndaelManaged())
+                var keyBytes = password.GetBytes(keysize / 8);
+                using (var symmetricKey = new RijndaelManaged())
                 {
                     symmetricKey.Mode = CipherMode.CBC;
-                    using (ICryptoTransform decryptor = symmetricKey.CreateDecryptor(keyBytes, initVectorBytes))
+                    using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, initVectorBytes))
+                    using (var memoryStream = new MemoryStream(cipherTextBytes))
+                    using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                     {
-                        using (MemoryStream memoryStream = new MemoryStream(cipherTextBytes))
-                        {
-                            using (CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
-                            {
-                                byte[] plainTextBytes = new byte[cipherTextBytes.Length];
-                                int decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
-                                return Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
-                            }
-                        }
+                        var plainTextBytes = new byte[cipherTextBytes.Length];
+                        var decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
+                        return Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
                     }
                 }
             }

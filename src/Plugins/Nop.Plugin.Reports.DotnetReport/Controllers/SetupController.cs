@@ -5,15 +5,66 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using ReportBuilder.Web.Core.Models;
 using System.Data.OleDb;
 using Newtonsoft.Json;
 using System.Data;
+using Nop.Plugin.Reports.DotnetReport.Models;
+using Nop.Web.Framework.Controllers;
+using Nop.Services.Security;
+using Nop.Services.Configuration;
+using Nop.Web.Framework.Mvc.Filters;
+using Nop.Core.Data;
 
-namespace ReportBuilder.Web.Core.Controllers
+namespace Nop.Plugin.Reports.DotnetReport.Controllers
 {
-    public class SetupController : Controller
+    public class SetupController : BasePluginController
     {
+        private readonly DotNetReportConfigSettings _settings;
+        private readonly IPermissionService _permissionService;
+        private readonly ISettingService _settingService;
+
+        public SetupController(
+            DotNetReportConfigSettings settings,
+            IPermissionService permissionService,
+            ISettingService settingService)
+        {
+            _settings = settings;
+            _permissionService = permissionService;
+            _settingService = settingService;
+        }
+
+        public IActionResult Configure()
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
+                return AccessDeniedView();
+
+            var model = new DotNetReportConfig
+            {
+                ApiUrl = _settings.ApiUrl,
+                AccountApiToken= _settings.AccountApiToken,
+                DataConnectApiToken = _settings.DataConnectApiToken
+            };
+            
+            return View("~/Plugins/Reports.DotnetReport/Views/Configure.cshtml", model);
+        }
+
+        [HttpPost]
+        [AdminAntiForgery]
+        public IActionResult Configure(DotNetReportConfig model)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
+                return Content("Access denied");
+
+            //save settings
+            _settings.ApiUrl = model.ApiUrl;
+            _settings.AccountApiToken = model.AccountApiToken;
+            _settings.DataConnectApiToken = model.DataConnectApiToken;
+            _settingService.SaveSetting(_settings);
+
+            return Json(new { Result = true });
+        }
+
+
         public async Task<IActionResult> Index(string databaseApiKey = "")
         {
             var connect = GetConnection(databaseApiKey);
@@ -39,9 +90,9 @@ namespace ReportBuilder.Web.Core.Controllers
         {
             return new ConnectViewModel
             {
-                ApiUrl = Startup.StaticConfig.GetValue<string>("dotNetReport:apiUrl"),
-                AccountApiKey = Startup.StaticConfig.GetValue<string>("dotNetReport:accountApiToken"),
-                DatabaseApiKey = string.IsNullOrEmpty(databaseApiKey) ? Startup.StaticConfig.GetValue<string>("dotNetReport:dataconnectApiToken") : databaseApiKey
+                ApiUrl = _settings.ApiUrl,
+                AccountApiKey = _settings.AccountApiToken,
+                DatabaseApiKey = string.IsNullOrEmpty(databaseApiKey) ? _settings.DataConnectApiToken : databaseApiKey
             };
         }
 
@@ -49,18 +100,17 @@ namespace ReportBuilder.Web.Core.Controllers
         {
             using (var client = new HttpClient())
             {
-                var response = await client.GetAsync(String.Format("{0}/ReportApi/GetDataConnectKey?account={1}&dataConnect={2}", connect.ApiUrl, connect.AccountApiKey, connect.DatabaseApiKey));
+                var response = await client.GetAsync(string.Format("{0}/ReportApi/GetDataConnectKey?account={1}&dataConnect={2}", connect.ApiUrl, connect.AccountApiKey, connect.DatabaseApiKey));
 
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
-                var connString = Startup.StaticConfig.GetConnectionString(content.Replace("\"", ""));
+                var dataSettings = DataSettingsManager.LoadSettings();
+                var connString = dataSettings.DataConnectionString;
                 connString = connString.Replace("Trusted_Connection=True", "");
 
                 if (!connString.ToLower().StartsWith("provider"))
-                {
                     connString = "Provider=sqloledb;" + connString;
-                }
 
                 return connString;
             }
@@ -69,7 +119,7 @@ namespace ReportBuilder.Web.Core.Controllers
 
         private FieldTypes ConvertToJetDataType(int oleDbDataType)
         {
-            switch (((OleDbType)oleDbDataType))
+            switch ((OleDbType)oleDbDataType)
             {
                 case OleDbType.LongVarChar:
                     return FieldTypes.Varchar; // "varchar";
@@ -133,7 +183,7 @@ namespace ReportBuilder.Web.Core.Controllers
         {
             using (var client = new HttpClient())
             {
-                var response = await client.GetAsync(String.Format("{0}/ReportApi/GetTables?account={1}&dataConnect={2}&clientId=", Startup.StaticConfig.GetValue<string>("dotNetReport:apiUrl"), accountKey, dataConnectKey));
+                var response = await client.GetAsync(string.Format("{0}/ReportApi/GetTables?account={1}&dataConnect={2}&clientId=", _settings.ApiUrl, accountKey, dataConnectKey));
 
                 response.EnsureSuccessStatusCode();
 
@@ -143,7 +193,6 @@ namespace ReportBuilder.Web.Core.Controllers
 
                 var tables = new List<TableViewModel>();
                 foreach (var item in values)
-                {
                     tables.Add(new TableViewModel
                     {
                         Id = item.tableId,
@@ -151,8 +200,6 @@ namespace ReportBuilder.Web.Core.Controllers
                         DisplayName = item.tableName,
                         AllowedRoles = item.tableRoles.ToObject<List<string>>()
                     });
-
-                }
 
                 return tables;
             }
@@ -162,7 +209,7 @@ namespace ReportBuilder.Web.Core.Controllers
         {
             using (var client = new HttpClient())
             {
-                var response = await client.GetAsync(String.Format("{0}/ReportApi/GetFields?account={1}&dataConnect={2}&clientId={3}&tableId={4}&includeDoNotDisplay=true", Startup.StaticConfig.GetValue<string>("dotNetReport:apiUrl"), accountKey, dataConnectKey, "", tableId));
+                var response = await client.GetAsync(string.Format("{0}/ReportApi/GetFields?account={1}&dataConnect={2}&clientId={3}&tableId={4}&includeDoNotDisplay=true", _settings.ApiUrl, accountKey, dataConnectKey, "", tableId));
 
                 response.EnsureSuccessStatusCode();
 
@@ -190,7 +237,7 @@ namespace ReportBuilder.Web.Core.Controllers
                     };
 
                     JoinTypes join;
-                    Enum.TryParse<JoinTypes>((string)item.foreignJoin, out join);
+                    Enum.TryParse((string)item.foreignJoin, out join);
                     column.ForeignJoin = join;
 
                     columns.Add(column);
@@ -206,31 +253,27 @@ namespace ReportBuilder.Web.Core.Controllers
 
             var currentTables = new List<TableViewModel>();
 
-            if (!String.IsNullOrEmpty(accountKey) && !String.IsNullOrEmpty(dataConnectKey))
-            {
+            if (!string.IsNullOrEmpty(accountKey) && !string.IsNullOrEmpty(dataConnectKey))
                 currentTables = await GetApiTables(accountKey, dataConnectKey);
-            }
 
             var connString = await GetConnectionString(GetConnection(dataConnectKey));
-            using (OleDbConnection conn = new OleDbConnection(connString))
+            using (var conn = new OleDbConnection(connString))
             {
                 // open the connection to the database 
                 conn.Open();
 
                 // Get the Tables
-                var SchemaTable = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new Object[] { null, null, null, type });
+                var schemaTable = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new object[] { null, null, null, type });
 
                 // Store the table names in the class scoped array list of table names
-                for (int i = 0; i < SchemaTable.Rows.Count; i++)
+                for (var i = 0; i < schemaTable.Rows.Count; i++)
                 {
-                    var tableName = SchemaTable.Rows[i].ItemArray[2].ToString();
+                    var tableName = schemaTable.Rows[i].ItemArray[2].ToString();
 
                     // see if this table is already in database
                     var matchTable = currentTables.FirstOrDefault(x => x.TableName.ToLower() == tableName.ToLower());
                     if (matchTable != null)
-                    {
                         matchTable.Columns = await GetApiFields(accountKey, dataConnectKey, matchTable.Id);
-                    }
 
                     var table = new TableViewModel
                     {
@@ -248,7 +291,7 @@ namespace ReportBuilder.Web.Core.Controllers
 
                     foreach (DataRow dr in dtField.Rows)
                     {
-                        ColumnViewModel matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dr["COLUMN_NAME"].ToString().ToLower()) : null;
+                        var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dr["COLUMN_NAME"].ToString().ToLower()) : null;
                         var column = new ColumnViewModel
                         {
                             ColumnName = matchColumn != null ? matchColumn.ColumnName : dr["COLUMN_NAME"].ToString(),

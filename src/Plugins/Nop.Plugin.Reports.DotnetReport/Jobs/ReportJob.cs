@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
+using Nop.Plugin.Reports.DotnetReport.Models;
 using Quartz;
 using Quartz.Impl;
-using ReportBuilder.Web.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -10,7 +10,7 @@ using System.Net.Http;
 using System.Net.Mail;
 using System.Threading.Tasks;
 
-namespace ReportBuilder.Web.Core.Jobs
+namespace Nop.Plugin.Reports.DotnetReport.Jobs
 {
     public class ReportSchedule
     {
@@ -61,6 +61,7 @@ namespace ReportBuilder.Web.Core.Jobs
             var apiUrl = ConfigurationManager.AppSettings["dotNetReport.apiUrl"];
             var accountApiKey = ConfigurationManager.AppSettings["dotNetReport.accountApiToken"];
             var databaseApiKey = ConfigurationManager.AppSettings["dotNetReport.dataconnectApiToken"];
+            var privateKey = ConfigurationManager.AppSettings["dotNetReport.privateApiToken"];
 
             var fromEmail = ConfigurationManager.AppSettings["email.fromemail"];
             var fromName = ConfigurationManager.AppSettings["email.fromname"];
@@ -81,18 +82,16 @@ namespace ReportBuilder.Web.Core.Jobs
                 var reports = JsonConvert.DeserializeObject<List<ReportWithSchedule>>(content);
 
                 foreach (var report in reports)
-                {
                     foreach (var schedule in report.Schedules)
-                    {
                         try
                         {
                             var chron = new CronExpression(schedule.Schedule);
-                            var lastRun = !String.IsNullOrEmpty(schedule.LastRun) ? Convert.ToDateTime(schedule.LastRun) : DateTimeOffset.UtcNow.AddMinutes(-10);
+                            var lastRun = !string.IsNullOrEmpty(schedule.LastRun) ? Convert.ToDateTime(schedule.LastRun) : DateTimeOffset.UtcNow.AddMinutes(-10);
                             var nextRun = chron.GetTimeAfter(lastRun);
 
-                            schedule.NextRun = (nextRun.HasValue ? nextRun.Value.ToLocalTime().DateTime : (DateTime?)null);
+                            schedule.NextRun = nextRun.HasValue ? nextRun.Value.ToLocalTime().DateTime : (DateTime?)null;
 
-                            if (schedule.NextRun.HasValue && DateTime.Now >= schedule.NextRun && (!String.IsNullOrEmpty(schedule.LastRun) || lastRun <= schedule.NextRun))
+                            if (schedule.NextRun.HasValue && DateTime.Now >= schedule.NextRun && (!string.IsNullOrEmpty(schedule.LastRun) || lastRun <= schedule.NextRun))
                             {
                                 // need to run this report
                                 response = await client.GetAsync($"{apiUrl}/ReportApi/RunScheduledReport?account={accountApiKey}&dataConnect={databaseApiKey}&scheduleId={schedule.Id}&reportId={report.Id}&localRunTime={schedule.NextRun.Value.ToShortDateString()} {schedule.NextRun.Value.ToShortTimeString()}&clientId={clientId}");
@@ -101,7 +100,7 @@ namespace ReportBuilder.Web.Core.Jobs
                                 content = await response.Content.ReadAsStringAsync();
                                 var reportToRun = JsonConvert.DeserializeObject<DotNetReportModel>(content);
 
-                                var excelFile = DotNetReportHelper.GetExcelFile(reportToRun.ReportSql, reportToRun.ConnectKey, reportToRun.ReportName);
+                                var excelFile = DotNetReportHelper.GetExcelFile(reportToRun.ReportSql, reportToRun.ConnectKey, reportToRun.ReportName, privateKey);
 
                                 // send email
                                 var mail = new MailMessage
@@ -129,8 +128,6 @@ namespace ReportBuilder.Web.Core.Jobs
                         {
                             // could not run, ignore error
                         }
-                    }
-                }
             }
         }
     }

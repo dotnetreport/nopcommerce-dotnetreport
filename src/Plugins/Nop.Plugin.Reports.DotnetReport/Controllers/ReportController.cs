@@ -7,12 +7,29 @@ using System.Web;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ReportBuilder.Web.Core.Models;
+using Nop.Plugin.Reports.DotnetReport.Models;
+using Nop.Services.Configuration;
+using Nop.Services.Security;
+using Nop.Web.Framework.Controllers;
 
-namespace ReportBuilder.Web.Core.Controllers
+namespace Nop.Plugin.Reports.DotnetReport.Controllers
 {
-    public class ReportController : Controller
+    public class ReportController : BasePluginController
     {
+        private readonly DotNetReportConfigSettings _settings;
+        private readonly IPermissionService _permissionService;
+        private readonly ISettingService _settingService;
+
+        public ReportController(
+            DotNetReportConfigSettings settings,
+            IPermissionService permissionService,
+            ISettingService settingService)
+        {
+            _settings = settings;
+            _permissionService = permissionService;
+            _settingService = settingService;
+        }
+
         public IActionResult Index()
         {
             return View();
@@ -41,15 +58,13 @@ namespace ReportBuilder.Web.Core.Controllers
 
         public async Task<IActionResult> Dashboard(int? id = null, bool adminMode = false)
         {
-            var reportApi = new ReportApiController();
+            var reportApi = new ReportApiController(_settings, _permissionService, _settingService);
             var model = new List<DotNetDasboardReportModel>();
             var settings = reportApi.GetSettings();
 
-            var dashboards = (JArray)(await reportApi.GetDashboardsData(adminMode));
+            var dashboards = (JArray)await reportApi.GetDashboardsData(adminMode);
             if (!id.HasValue && dashboards.Count > 0)
-            {
                 id = ((dynamic)dashboards.First()).Id;
-            }
 
             using (var client = new HttpClient())
             {
@@ -59,7 +74,7 @@ namespace ReportBuilder.Web.Core.Controllers
                     new KeyValuePair<string, string>("dataConnect", settings.DataConnectApiToken),
                     new KeyValuePair<string, string>("clientId", settings.ClientId),
                     new KeyValuePair<string, string>("userId", settings.UserId),
-                    new KeyValuePair<string, string>("userRole", String.Join(",", settings.CurrentUserRole)),
+                    new KeyValuePair<string, string>("userRole", string.Join(",", settings.CurrentUserRole)),
                     new KeyValuePair<string, string>("id", id.HasValue ? id.Value.ToString() : "0"),
                     new KeyValuePair<string, string>("adminMode", adminMode.ToString()),
                 });
@@ -80,17 +95,17 @@ namespace ReportBuilder.Web.Core.Controllers
         [HttpPost]
         public IActionResult DownloadExcel(string reportSql, string connectKey, string reportName)
         {
-            var excel = DotNetReportHelper.GetExcelFile(reportSql, connectKey, reportName);
+            var excel = DotNetReportHelper.GetExcelFile(reportSql, connectKey, reportName, _settings.PrivateApiToken);
             Response.Headers.Add("content-disposition", "attachment; filename=" + reportName + ".xlsx");
             Response.ContentType = "application/vnd.ms-excel";
-            
+
             return File(excel, "application/vnd.ms-excel", reportName + ".xlsx");
         }
 
         [HttpPost]
         public IActionResult DownloadXml(string reportSql, string connectKey, string reportName)
         {
-            var xml = DotNetReportHelper.GetXmlFile(reportSql, connectKey, reportName);
+            var xml = DotNetReportHelper.GetXmlFile(reportSql, connectKey, reportName, _settings.PrivateApiToken);
             Response.Headers.Add("content-disposition", "attachment; filename=" + reportName + ".xml");
             Response.ContentType = "application/xml";
 
