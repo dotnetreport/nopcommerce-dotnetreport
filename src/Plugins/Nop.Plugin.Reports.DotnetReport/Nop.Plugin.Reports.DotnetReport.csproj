@@ -14,6 +14,9 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Jobs\ReportJob.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="plugin.json" />
     <None Remove="Views\Configure.cshtml" />
     <None Remove="Views\_ViewImports.cshtml" />
@@ -33,8 +36,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    
-    <PackageReference Include="Quartz" Version="3.0.7" />
     
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Data.OleDb" Version="4.7.0" />
