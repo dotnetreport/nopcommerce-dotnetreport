@@ -247,17 +247,17 @@ namespace Nop.Plugin.Reports.DotnetReport.Models
 
     public class DotNetReportConfig : DotNetReportSettings
     {
-        [Required]
+       // [Required]
         public string ContactEmail { get; set; }
-        [Required]
+      //  [Required]
         public string ContactName { get; set; }
         public string ContactPhoneNumber { get; set; }
         public string BusinessName { get; set; }
         public string BusinessWebsite { get; set; }
 
-        [Required]
+      //  [Required]
         public string DataConnectionName { get; set; }
-        [Required]
+      //  [Required]
         public string DataConnectKey { get; set; }
 
         public string DefaultSetup { get; set; }

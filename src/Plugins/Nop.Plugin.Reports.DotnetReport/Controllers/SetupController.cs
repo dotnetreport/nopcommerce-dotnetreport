@@ -14,30 +14,43 @@ using Nop.Services.Security;
 using Nop.Services.Configuration;
 using Nop.Web.Framework.Mvc.Filters;
 using Nop.Core.Data;
+using Nop.Web.Framework;
+using Nop.Services.Localization;
+using Nop.Services.Messages;
+using Nop.Data;
+using System.Data.SqlClient;
 
 namespace Nop.Plugin.Reports.DotnetReport.Controllers
 {
+    [AuthorizeAdmin]
+    [Area(AreaNames.Admin)]
     public class SetupController : BasePluginController
     {
         private readonly DotNetReportConfigSettings _settings;
         private readonly IPermissionService _permissionService;
         private readonly ISettingService _settingService;
-
+        private readonly ILocalizationService _localizationService;
+        private readonly INotificationService _notificationService;
+        private readonly IDbContext _dbContext;
         public SetupController(
             DotNetReportConfigSettings settings,
             IPermissionService permissionService,
-            ISettingService settingService)
+            ISettingService settingService, ILocalizationService localizationService,
+            INotificationService notificationService, IDbContext dbContext)
         {
             _settings = settings;
             _permissionService = permissionService;
             _settingService = settingService;
+            _localizationService = localizationService;
+            _notificationService = notificationService;
+            _dbContext = dbContext;
         }
 
         public IActionResult Configure()
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
                 return AccessDeniedView();
-
+            
             var model = new DotNetReportConfig
             {
                 ApiUrl = _settings.ApiUrl,
@@ -55,13 +68,17 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
                 return Content("Access denied");
 
+            if (!ModelState.IsValid)
+                return Configure();
             //save settings
             _settings.ApiUrl = model.ApiUrl;
             _settings.AccountApiToken = model.AccountApiToken;
             _settings.DataConnectApiToken = model.DataConnectApiToken;
             _settingService.SaveSetting(_settings);
+            _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Plugins.Saved"));
 
-            return Json(new { Result = true });
+            return Configure();
+           // return Json(new { Result = true });
         }
 
 
@@ -70,7 +87,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             var connect = GetConnection(databaseApiKey);
             var tables = new List<TableViewModel>();
 
-            tables.AddRange(await GetTables("TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
+            tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
             tables.AddRange(await GetTables("VIEW", connect.AccountApiKey, connect.DatabaseApiKey));
 
             var model = new ManageViewModel
@@ -81,7 +98,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 Tables = tables
             };
 
-            return View(model);
+            return View("~/Plugins/Reports.DotnetReport/Views/Setup/Index.cshtml", model);
         }
 
         #region "Private Methods"
@@ -108,76 +125,76 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 var dataSettings = DataSettingsManager.LoadSettings();
                 var connString = dataSettings.DataConnectionString;
                 connString = connString.Replace("Trusted_Connection=True", "");
-
-                if (!connString.ToLower().StartsWith("provider"))
-                    connString = "Provider=sqloledb;" + connString;
+              //  connString = connString.Replace("Integrated Security=False;Persist Security Info=False;", "");
+                //if (!connString.ToLower().StartsWith("provider"))
+                    //connString =  connString + "providerName=sqloledb;";
 
                 return connString;
             }
 
         }
 
-        private FieldTypes ConvertToJetDataType(int oleDbDataType)
-        {
-            switch ((OleDbType)oleDbDataType)
-            {
-                case OleDbType.LongVarChar:
-                    return FieldTypes.Varchar; // "varchar";
-                case OleDbType.BigInt:
-                    return FieldTypes.Int; // "int";       // In Jet this is 32 bit while bigint is 64 bits
-                case OleDbType.Binary:
-                case OleDbType.LongVarBinary:
-                    return FieldTypes.Varchar; // "binary";
-                case OleDbType.Boolean:
-                    return FieldTypes.Boolean; // "bit";
-                case OleDbType.Char:
-                    return FieldTypes.Varchar; // "char";
-                case OleDbType.Currency:
-                    return FieldTypes.Money; // "decimal";
-                case OleDbType.DBDate:
-                case OleDbType.Date:
-                case OleDbType.DBTimeStamp:
-                    return FieldTypes.DateTime; // "datetime";
-                case OleDbType.Decimal:
-                case OleDbType.Numeric:
-                    return FieldTypes.Double; // "decimal";
-                case OleDbType.Double:
-                    return FieldTypes.Double; // "double";
-                case OleDbType.Integer:
-                    return FieldTypes.Int; // "int";
-                case OleDbType.Single:
-                    return FieldTypes.Int; // "single";
-                case OleDbType.SmallInt:
-                    return FieldTypes.Int; // "smallint";
-                case OleDbType.TinyInt:
-                    return FieldTypes.Int; // "smallint";  // Signed byte not handled by jet so we need 16 bits
-                case OleDbType.UnsignedTinyInt:
-                    return FieldTypes.Int; // "byte";
-                case OleDbType.VarBinary:
-                    return FieldTypes.Varchar; // "varbinary";
-                case OleDbType.VarChar:
-                    return FieldTypes.Varchar; // "varchar";
-                case OleDbType.BSTR:
-                case OleDbType.Variant:
-                case OleDbType.VarWChar:
-                case OleDbType.VarNumeric:
-                case OleDbType.Error:
-                case OleDbType.WChar:
-                case OleDbType.DBTime:
-                case OleDbType.Empty:
-                case OleDbType.Filetime:
-                case OleDbType.Guid:
-                case OleDbType.IDispatch:
-                case OleDbType.IUnknown:
-                case OleDbType.UnsignedBigInt:
-                case OleDbType.UnsignedInt:
-                case OleDbType.UnsignedSmallInt:
-                case OleDbType.PropVariant:
-                default:
-                    return FieldTypes.Varchar; // 
-                    //throw new ArgumentException(string.Format("The data type {0} is not handled by Jet. Did you retrieve this from Jet?", ((OleDbType)oleDbDataType)));
-            }
-        }
+        //private FieldTypes ConvertToJetDataType(int oleDbDataType)
+        //{
+        //    switch ((OleDbType)oleDbDataType)
+        //    {
+        //        case OleDbType.LongVarChar:
+        //            return FieldTypes.Varchar; // "varchar";
+        //        case OleDbType.BigInt:
+        //            return FieldTypes.Int; // "int";       // In Jet this is 32 bit while bigint is 64 bits
+        //        case OleDbType.Binary:
+        //        case OleDbType.LongVarBinary:
+        //            return FieldTypes.Varchar; // "binary";
+        //        case OleDbType.Boolean:
+        //            return FieldTypes.Boolean; // "bit";
+        //        case OleDbType.Char:
+        //            return FieldTypes.Varchar; // "char";
+        //        case OleDbType.Currency:
+        //            return FieldTypes.Money; // "decimal";
+        //        case OleDbType.DBDate:
+        //        case OleDbType.Date:
+        //        case OleDbType.DBTimeStamp:
+        //            return FieldTypes.DateTime; // "datetime";
+        //        case OleDbType.Decimal:
+        //        case OleDbType.Numeric:
+        //            return FieldTypes.Double; // "decimal";
+        //        case OleDbType.Double:
+        //            return FieldTypes.Double; // "double";
+        //        case OleDbType.Integer:
+        //            return FieldTypes.Int; // "int";
+        //        case OleDbType.Single:
+        //            return FieldTypes.Int; // "single";
+        //        case OleDbType.SmallInt:
+        //            return FieldTypes.Int; // "smallint";
+        //        case OleDbType.TinyInt:
+        //            return FieldTypes.Int; // "smallint";  // Signed byte not handled by jet so we need 16 bits
+        //        case OleDbType.UnsignedTinyInt:
+        //            return FieldTypes.Int; // "byte";
+        //        case OleDbType.VarBinary:
+        //            return FieldTypes.Varchar; // "varbinary";
+        //        case OleDbType.VarChar:
+        //            return FieldTypes.Varchar; // "varchar";
+        //        case OleDbType.BSTR:
+        //        case OleDbType.Variant:
+        //        case OleDbType.VarWChar:
+        //        case OleDbType.VarNumeric:
+        //        case OleDbType.Error:
+        //        case OleDbType.WChar:
+        //        case OleDbType.DBTime:
+        //        case OleDbType.Empty:
+        //        case OleDbType.Filetime:
+        //        case OleDbType.Guid:
+        //        case OleDbType.IDispatch:
+        //        case OleDbType.IUnknown:
+        //        case OleDbType.UnsignedBigInt:
+        //        case OleDbType.UnsignedInt:
+        //        case OleDbType.UnsignedSmallInt:
+        //        case OleDbType.PropVariant:
+        //        default:
+        //            return FieldTypes.Varchar; // 
+        //            //throw new ArgumentException(string.Format("The data type {0} is not handled by Jet. Did you retrieve this from Jet?", ((OleDbType)oleDbDataType)));
+        //    }
+        //}
 
         private async Task<List<TableViewModel>> GetApiTables(string accountKey, string dataConnectKey)
         {
@@ -247,7 +264,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             }
         }
 
-        private async Task<List<TableViewModel>> GetTables(string type = "TABLE", string accountKey = null, string dataConnectKey = null)
+        private async Task<List<TableViewModel>> GetTables(string type = "BASE TABLE", string accountKey = null, string dataConnectKey = null)
         {
             var tables = new List<TableViewModel>();
 
@@ -257,13 +274,13 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 currentTables = await GetApiTables(accountKey, dataConnectKey);
 
             var connString = await GetConnectionString(GetConnection(dataConnectKey));
-            using (var conn = new OleDbConnection(connString))
+            using (var conn = new SqlConnection(connString))
             {
                 // open the connection to the database 
                 conn.Open();
 
                 // Get the Tables
-                var schemaTable = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new object[] { null, null, null, type });
+                var schemaTable = conn.GetSchema("Tables", new string[] { null, null, null, type });
 
                 // Store the table names in the class scoped array list of table names
                 for (var i = 0; i < schemaTable.Rows.Count; i++)
@@ -286,37 +303,40 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                         AllowedRoles = matchTable != null ? matchTable.AllowedRoles : new List<string>()
                     };
 
-                    var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
+                  //  var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
                     var idx = 0;
 
-                    foreach (DataRow dr in dtField.Rows)
+                    foreach (DataRow dr in schemaTable.Rows)
                     {
-                        var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dr["COLUMN_NAME"].ToString().ToLower()) : null;
-                        var column = new ColumnViewModel
+                        foreach (DataColumn dc in schemaTable.Columns)
                         {
-                            ColumnName = matchColumn != null ? matchColumn.ColumnName : dr["COLUMN_NAME"].ToString(),
-                            DisplayName = matchColumn != null ? matchColumn.DisplayName : dr["COLUMN_NAME"].ToString(),
-                            PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : dr["COLUMN_NAME"].ToString().ToLower().EndsWith("id") && idx == 0,
-                            DisplayOrder = matchColumn != null ? matchColumn.DisplayOrder : idx++,
-                            FieldType = matchColumn != null ? matchColumn.FieldType : ConvertToJetDataType((int)dr["DATA_TYPE"]).ToString(),
-                            AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
-                        };
+                            var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dr[dc].ToString().ToLower()) : null;
+                            var column = new ColumnViewModel
+                            {
+                                ColumnName = matchColumn != null ? matchColumn.ColumnName : dr[dc].ToString(),
+                                DisplayName = matchColumn != null ? matchColumn.DisplayName : dr[dc].ToString(),
+                                PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : dr[dc].ToString().ToLower().EndsWith("id") && idx == 0,
+                                DisplayOrder = matchColumn != null ? matchColumn.DisplayOrder : idx++,
+                                FieldType = matchColumn != null ? matchColumn.FieldType : dc.DataType.UnderlyingSystemType.ToString(),
+                                AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
+                            };
 
-                        if (matchColumn != null)
-                        {
-                            column.ForeignKey = matchColumn.ForeignKey;
-                            column.ForeignJoin = matchColumn.ForeignJoin;
-                            column.ForeignTable = matchColumn.ForeignTable;
-                            column.ForeignKeyField = matchColumn.ForeignKeyField;
-                            column.ForeignValueField = matchColumn.ForeignValueField;
-                            column.Id = matchColumn.Id;
-                            column.DoNotDisplay = matchColumn.DoNotDisplay;
-                            column.DisplayOrder = matchColumn.DisplayOrder;
+                            if (matchColumn != null)
+                            {
+                                column.ForeignKey = matchColumn.ForeignKey;
+                                column.ForeignJoin = matchColumn.ForeignJoin;
+                                column.ForeignTable = matchColumn.ForeignTable;
+                                column.ForeignKeyField = matchColumn.ForeignKeyField;
+                                column.ForeignValueField = matchColumn.ForeignValueField;
+                                column.Id = matchColumn.Id;
+                                column.DoNotDisplay = matchColumn.DoNotDisplay;
+                                column.DisplayOrder = matchColumn.DisplayOrder;
 
-                            column.Selected = true;
+                                column.Selected = true;
+                            }
+
+                            table.Columns.Add(column);
                         }
-
-                        table.Columns.Add(column);
                     }
                     table.Columns = table.Columns.OrderBy(x => x.DisplayOrder).ToList();
                     tables.Add(table);
