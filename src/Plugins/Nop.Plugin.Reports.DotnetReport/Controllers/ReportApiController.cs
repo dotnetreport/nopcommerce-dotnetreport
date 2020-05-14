@@ -116,6 +116,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                     if (key != "adminMode" || key == "adminMode" && settings.CanUseAdminMode)
                         keyvalues.Add(new KeyValuePair<string, string>(key, data[key].ToString()));
 
+                
                 var content = new FormUrlEncodedContent(keyvalues);
                 var response = await client.PostAsync(new Uri(settings.ApiUrl + method), content);
                 var stringContent = await response.Content.ReadAsStringAsync();

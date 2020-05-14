@@ -41,33 +41,35 @@ namespace Nop.Plugin.Reports.DotnetReport
 
         public void ManageSiteMap(SiteMapNode rootNode)
         {
-            var CustomDashboard = new SiteMapNode()
+            var customDashboard = new SiteMapNode()
             {
                 SystemName = "Reports.DotnetReport",
                 Title = "Custom Dashboard",
-                ControllerName = "Report",
+                ControllerName = "DotNetReport",
                 ActionName = "Dashboard",
                 Visible = true,
                IconClass = "fa-dot-circle-o",
-                RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } },
+                RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }, // AreaName.Admin
             };
-            var CustomReport = new SiteMapNode()
+            var customReport = new SiteMapNode()
             {
                 SystemName = "Reports.DotnetReport",
                 Title = "Custom Report",
-                ControllerName = "Report",
+                ControllerName = "DotNetReport",
                 ActionName = "Index",
                 Visible = true,
                 IconClass = "fa-dot-circle-o",
                 RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } },
+
+
             };
             var reportsNode = rootNode.ChildNodes.FirstOrDefault(x => x.SystemName == "Reports");
             
           //  var Nodes = rootNode.ChildNodes;
           //  var pluginNode = Nodes.FirstOrDefault(x => x.SystemName == "Third party plugins");
             if (reportsNode != null)
-                reportsNode.ChildNodes.Add(CustomDashboard);
-               reportsNode.ChildNodes.Add(CustomReport);
+                reportsNode.ChildNodes.Add(customDashboard);
+               reportsNode.ChildNodes.Add(customReport);
 
         }
 

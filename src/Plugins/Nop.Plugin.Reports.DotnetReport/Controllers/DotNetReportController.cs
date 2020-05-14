@@ -10,17 +10,21 @@ using Newtonsoft.Json.Linq;
 using Nop.Plugin.Reports.DotnetReport.Models;
 using Nop.Services.Configuration;
 using Nop.Services.Security;
+using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
+using Nop.Web.Framework.Mvc.Filters;
 
 namespace Nop.Plugin.Reports.DotnetReport.Controllers
 {
-    public class ReportController : BasePluginController
+    [AuthorizeAdmin]
+    [Area(AreaNames.Admin)]
+    public class DotNetReportController : BasePluginController
     {
         private readonly DotNetReportConfigSettings _settings;
         private readonly IPermissionService _permissionService;
         private readonly ISettingService _settingService;
 
-        public ReportController(
+        public DotNetReportController(
             DotNetReportConfigSettings settings,
             IPermissionService permissionService,
             ISettingService settingService)
@@ -32,7 +36,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return View("~/Plugins/Reports.DotnetReport/Views/DotNetReport/Index.cshtml");
         }
 
         public IActionResult Report(int reportId, string reportName, string reportDescription, bool includeSubTotal, bool showUniqueRecords,
@@ -52,8 +56,8 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 SelectedFolder = selectedFolder,
                 ReportFilter = reportFilter // json data to setup filter correctly again
             };
-
-            return View(model);
+            return View("~/Plugins/Reports.DotnetReport/Views/DotNetReport/Report.cshtml", model);
+           
         }
 
         public async Task<IActionResult> Dashboard(int? id = null, bool adminMode = false)
@@ -84,8 +88,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
 
                 model = JsonConvert.DeserializeObject<List<DotNetDasboardReportModel>>(stringContent);
             }
-
-            return View(new DotNetDashboardModel
+            return View("~/Plugins/Reports.DotnetReport/Views/DotNetReport/Dashboard.cshtml", new DotNetDashboardModel
             {
                 Dashboards = dashboards.Select(x => (dynamic)x).ToList(),
                 Reports = model
