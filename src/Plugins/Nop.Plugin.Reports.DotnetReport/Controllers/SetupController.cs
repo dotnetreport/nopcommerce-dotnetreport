@@ -55,7 +55,8 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             {
                 ApiUrl = _settings.ApiUrl,
                 AccountApiToken= _settings.AccountApiToken,
-                DataConnectApiToken = _settings.DataConnectApiToken
+                DataConnectApiToken = _settings.DataConnectApiToken,
+                PrivateApiToken = _settings.PrivateApiToken
             };
             
             return View("~/Plugins/Reports.DotnetReport/Views/Configure.cshtml", model);
@@ -74,6 +75,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             _settings.ApiUrl = model.ApiUrl;
             _settings.AccountApiToken = model.AccountApiToken;
             _settings.DataConnectApiToken = model.DataConnectApiToken;
+            _settings.PrivateApiToken = model.PrivateApiToken;
             _settingService.SaveSetting(_settings);
             _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Plugins.Saved"));
 

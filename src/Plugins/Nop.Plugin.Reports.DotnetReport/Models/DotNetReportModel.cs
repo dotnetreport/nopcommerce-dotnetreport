@@ -202,7 +202,11 @@ namespace Nop.Plugin.Reports.DotnetReport.Models
         /// Your dotnet Report Data Connection Key
         /// </summary>
         public string DataConnectApiToken { get; set; }
-
+        /// <summary>
+        /// Your dotnet Private Account Key
+        /// </summary>
+        public string PrivateApiToken { get; set; }
+        
         /// <summary>
         /// Current Client Id if using Multi-tenant
         /// </summary>
