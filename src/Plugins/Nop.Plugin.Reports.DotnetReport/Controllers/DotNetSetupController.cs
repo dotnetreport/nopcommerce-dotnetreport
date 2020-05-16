@@ -92,8 +92,6 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
             tables.AddRange(await GetTables("VIEW", connect.AccountApiKey, connect.DatabaseApiKey));
 
-            tables = tables.Take(10).ToList();
-
             var model = new ManageViewModel
             {
                 ApiUrl = connect.ApiUrl,
@@ -299,7 +297,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                         AllowedRoles = matchTable != null ? matchTable.AllowedRoles : new List<string>()
                     };
 
-                  //  var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
+                    var dtField = conn.GetSchema("Columns", new[] { schemaTable.Rows[i]["TABLE_CATALOG"].ToString(), null, tableName });
                     var idx = 0;
                     string[] restrictionsColumns = new string[4];
                     restrictionsColumns[2] = tableName;
@@ -321,19 +319,19 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                                 AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
                             };
 
-                            if (matchColumn != null)
-                            {
-                                column.ForeignKey = matchColumn.ForeignKey;
-                                column.ForeignJoin = matchColumn.ForeignJoin;
-                                column.ForeignTable = matchColumn.ForeignTable;
-                                column.ForeignKeyField = matchColumn.ForeignKeyField;
-                                column.ForeignValueField = matchColumn.ForeignValueField;
-                                column.Id = matchColumn.Id;
-                                column.DoNotDisplay = matchColumn.DoNotDisplay;
-                                column.DisplayOrder = matchColumn.DisplayOrder;
+                        if (matchColumn != null)
+                        {
+                            column.ForeignKey = matchColumn.ForeignKey;
+                            column.ForeignJoin = matchColumn.ForeignJoin;
+                            column.ForeignTable = matchColumn.ForeignTable;
+                            column.ForeignKeyField = matchColumn.ForeignKeyField;
+                            column.ForeignValueField = matchColumn.ForeignValueField;
+                            column.Id = matchColumn.Id;
+                            column.DoNotDisplay = matchColumn.DoNotDisplay;
+                            column.DisplayOrder = matchColumn.DisplayOrder;
 
-                                column.Selected = true;
-                            }
+                            column.Selected = true;
+                        }
 
                         if (!table.Columns.Any(x=>x.PrimaryKey = true))
                         {

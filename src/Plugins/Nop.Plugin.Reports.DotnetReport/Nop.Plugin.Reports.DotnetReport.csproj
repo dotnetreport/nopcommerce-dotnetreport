@@ -32,6 +32,20 @@
     <None Remove="Content\toastr.scss" />
     <None Remove="plugin.json" />
     <None Remove="Scripts\bootbox.min.js" />
+    <None Remove="Scripts\bootstrap-editable.min.js" />
+    <None Remove="Scripts\dotnetreport-helper.js" />
+    <None Remove="Scripts\dotnetreport-setup.js" />
+    <None Remove="Scripts\dotnetreport-wizard.js" />
+    <None Remove="Scripts\dotnetreport.min.js" />
+    <None Remove="Scripts\jquery.blockUI.js" />
+    <None Remove="Scripts\knockout-3.5.0.js" />
+    <None Remove="Scripts\knockout-sortable.min.js" />
+    <None Remove="Scripts\knockout.mapping-latest.js" />
+    <None Remove="Scripts\knockout.x-editable.min.js" />
+    <None Remove="Scripts\lodash.min.js" />
+    <None Remove="Scripts\select2.min.js" />
+    <None Remove="Scripts\toastr.min.js" />
+    <None Remove="Views\Configure.cshtml" />
     <None Remove="Views\DotNetReport\Dashboard.cshtml" />
     <None Remove="Views\DotNetReport\Index.cshtml" />
     <None Remove="Views\DotNetReport\Report.cshtml" />
@@ -188,8 +202,8 @@
     <Content Include="Scripts\plugins\svg.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Scripts\plugins\total_pages.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <Content Include="Scripts\knockout.mapping-latest.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Scripts\plugins\zlib.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
