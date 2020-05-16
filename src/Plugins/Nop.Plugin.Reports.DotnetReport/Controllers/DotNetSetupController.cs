@@ -287,7 +287,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                     var matchTable = currentTables.FirstOrDefault(x => x.TableName.ToLower() == tableName.ToLower());
                     if (matchTable != null)
                         matchTable.Columns = await GetApiFields(accountKey, dataConnectKey, matchTable.Id);
-
+                   
                     var table = new TableViewModel
                     {
                         Id = matchTable != null ? matchTable.Id : 0,
@@ -301,19 +301,23 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
 
                   //  var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
                     var idx = 0;
-
-                    foreach (DataRow dr in schemaTable.Rows)
-                    {
-                        foreach (DataColumn dc in schemaTable.Columns)
+                    string[] restrictionsColumns = new string[4];
+                    restrictionsColumns[2] = tableName;
+                    DataTable schemaColumns = conn.GetSchema("Columns", restrictionsColumns);
+                    DataTable schemaPrimaryKey = conn.GetSchema("IndexColumns", restrictionsColumns);
+                    DataTable schemaForeignKeys = conn.GetSchema("ForeignKeys", restrictionsColumns);
+                    foreach (DataRow rowColumn in schemaColumns.Rows)
                         {
-                            var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dr[dc].ToString().ToLower()) : null;
+                        string ColumnName = rowColumn[3].ToString();
+                        
+                        var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == ColumnName.ToLower()) : null;
                             var column = new ColumnViewModel
                             {
-                                ColumnName = matchColumn != null ? matchColumn.ColumnName : dr[dc].ToString(),
-                                DisplayName = matchColumn != null ? matchColumn.DisplayName : dr[dc].ToString(),
-                                PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : dr[dc].ToString().ToLower().EndsWith("id") && idx == 0,
+                                ColumnName = matchColumn != null ? matchColumn.ColumnName : ColumnName.ToString(),
+                                DisplayName = matchColumn != null ? matchColumn.DisplayName : ColumnName.ToString(),
+                               // PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : rowColumn[6].ToString().ToLower().EndsWith("id") && idx == 0,
                                 DisplayOrder = matchColumn != null ? matchColumn.DisplayOrder : idx++,
-                                FieldType = matchColumn != null ? matchColumn.FieldType : dc.DataType.UnderlyingSystemType.ToString(),
+                                FieldType = matchColumn != null ? matchColumn.FieldType : rowColumn[7].ToString(),
                                 AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
                             };
 
@@ -331,9 +335,26 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                                 column.Selected = true;
                             }
 
-                            table.Columns.Add(column);
+                        if (!table.Columns.Any(x=>x.PrimaryKey = true))
+                        {
+                            foreach (System.Data.DataRow rowPrimaryKey in schemaPrimaryKey.Rows)
+                            {
+                                string indexName = rowPrimaryKey[2].ToString();
+
+                                if (indexName.IndexOf("PK_") != -1)
+                                    column.PrimaryKey = true;
+                            }
                         }
-                    }
+                        if (!table.Columns.Any(x => x.ForeignKey = true))
+                        {
+                            foreach (System.Data.DataRow rowFK in schemaForeignKeys.Rows)
+                            {
+                                column.ForeignKey = true;
+                                column.ForeignKeyField = rowFK[2].ToString();
+                            }
+                        }
+                        table.Columns.Add(column);
+                        }
                     table.Columns = table.Columns.OrderBy(x => x.DisplayOrder).ToList();
                     tables.Add(table);
                 }

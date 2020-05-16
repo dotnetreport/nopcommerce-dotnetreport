@@ -15,13 +15,15 @@ namespace Nop.Plugin.Reports.DotnetReport.Models
         /// <summary>
         /// Your dotnet Report Account Key
         /// </summary>
+        [NopResourceDisplayName("Plugins.Reports.DotnetReport.Fields.AccountApiToken")]
         public string AccountApiToken { get; set; }
 
         /// <summary>
         /// Your dotnet Report Data Connection Key
         /// </summary>
+        [NopResourceDisplayName("Plugins.Reports.DotnetReport.Fields.DataConnectApiToken")]
         public string DataConnectApiToken { get; set; }
-
+        [NopResourceDisplayName("Plugins.Reports.DotnetReport.Fields.PrivateApiToken")]
         public string PrivateApiToken { get; set; }
     }
 
