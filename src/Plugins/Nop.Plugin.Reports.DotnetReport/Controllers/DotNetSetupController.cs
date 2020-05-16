@@ -92,8 +92,6 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
             tables.AddRange(await GetTables("VIEW", connect.AccountApiKey, connect.DatabaseApiKey));
 
-            tables = tables.Take(10).ToList();
-
             var model = new ManageViewModel
             {
                 ApiUrl = connect.ApiUrl,
@@ -299,41 +297,39 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                         AllowedRoles = matchTable != null ? matchTable.AllowedRoles : new List<string>()
                     };
 
-                  //  var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
+                    var dtField = conn.GetSchema("Columns", new[] { schemaTable.Rows[i]["TABLE_CATALOG"].ToString(), null, tableName });
                     var idx = 0;
 
-                    foreach (DataRow dr in schemaTable.Rows)
+                    foreach (DataRow dc in dtField.Rows)
                     {
-                        foreach (DataColumn dc in schemaTable.Columns)
+                        var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dc["COLUMN_NAME"].ToString().ToLower()) : null;
+                        var column = new ColumnViewModel
                         {
-                            var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == dr[dc].ToString().ToLower()) : null;
-                            var column = new ColumnViewModel
-                            {
-                                ColumnName = matchColumn != null ? matchColumn.ColumnName : dr[dc].ToString(),
-                                DisplayName = matchColumn != null ? matchColumn.DisplayName : dr[dc].ToString(),
-                                PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : dr[dc].ToString().ToLower().EndsWith("id") && idx == 0,
-                                DisplayOrder = matchColumn != null ? matchColumn.DisplayOrder : idx++,
-                                FieldType = matchColumn != null ? matchColumn.FieldType : dc.DataType.UnderlyingSystemType.ToString(),
-                                AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
-                            };
+                            ColumnName = matchColumn != null ? matchColumn.ColumnName : dc["COLUMN_NAME"].ToString(),
+                            DisplayName = matchColumn != null ? matchColumn.DisplayName : dc["COLUMN_NAME"].ToString(),
+                            PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : dc["COLUMN_NAME"].ToString().ToString().ToLower().EndsWith("id") && idx == 0,
+                            DisplayOrder = matchColumn != null ? matchColumn.DisplayOrder : idx++,
+                            FieldType = matchColumn != null ? matchColumn.FieldType : dc["DATA_TYPE"].ToString().ToString(),
+                            AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
+                        };
 
-                            if (matchColumn != null)
-                            {
-                                column.ForeignKey = matchColumn.ForeignKey;
-                                column.ForeignJoin = matchColumn.ForeignJoin;
-                                column.ForeignTable = matchColumn.ForeignTable;
-                                column.ForeignKeyField = matchColumn.ForeignKeyField;
-                                column.ForeignValueField = matchColumn.ForeignValueField;
-                                column.Id = matchColumn.Id;
-                                column.DoNotDisplay = matchColumn.DoNotDisplay;
-                                column.DisplayOrder = matchColumn.DisplayOrder;
+                        if (matchColumn != null)
+                        {
+                            column.ForeignKey = matchColumn.ForeignKey;
+                            column.ForeignJoin = matchColumn.ForeignJoin;
+                            column.ForeignTable = matchColumn.ForeignTable;
+                            column.ForeignKeyField = matchColumn.ForeignKeyField;
+                            column.ForeignValueField = matchColumn.ForeignValueField;
+                            column.Id = matchColumn.Id;
+                            column.DoNotDisplay = matchColumn.DoNotDisplay;
+                            column.DisplayOrder = matchColumn.DisplayOrder;
 
-                                column.Selected = true;
-                            }
-
-                            table.Columns.Add(column);
+                            column.Selected = true;
                         }
+
+                        table.Columns.Add(column);
                     }
+
                     table.Columns = table.Columns.OrderBy(x => x.DisplayOrder).ToList();
                     tables.Add(table);
                 }
