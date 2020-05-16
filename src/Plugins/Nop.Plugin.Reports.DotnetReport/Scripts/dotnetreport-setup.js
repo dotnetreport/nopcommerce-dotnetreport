@@ -228,7 +228,8 @@
 		return joinsToSave;
 	}
 
-	self.SaveJoins = function () {				
+	self.SaveJoins = function () {
+		
 		var joinsToSave = self.getJoinsToSave();
 
 		ajaxcall({
