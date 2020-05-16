@@ -17,18 +17,82 @@
     <Compile Remove="Jobs\ReportJob.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Content\bootstrap-editable.css" />
+    <None Remove="Content\datepicker.css" />
+    <None Remove="Content\dotnetreport.css" />
+    <None Remove="Content\toastr.min.css" />
     <None Remove="plugin.json" />
+    <None Remove="Scripts\dotnetreport-helper.js" />
+    <None Remove="Scripts\dotnetreport-setup.js" />
+    <None Remove="Scripts\dotnetreport-wizard.js" />
+    <None Remove="Scripts\dotnetreport.min.js" />
     <None Remove="Views\Configure.cshtml" />
+    <None Remove="Views\DotNetReport\Dashboard.cshtml" />
+    <None Remove="Views\DotNetReport\Index.cshtml" />
+    <None Remove="Views\DotNetReport\Report.cshtml" />
+    <None Remove="Views\Setup\Index.cshtml" />
+    <None Remove="Views\Shared\_Layout.Report.cshtml" />
+    <None Remove="Views\Shared\_reportFilter.cshtml" />
+    <None Remove="Views\Shared\_reportResources.cshtml" />
+    <None Remove="Views\Shared\_ReportTemplate.cshtml" />
     <None Remove="Views\_ViewImports.cshtml" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\bootstrap-editable.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\datepicker.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\dotnetreport.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\toastr.min.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="logo.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="plugin.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Scripts\dotnetreport-helper.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\dotnetreport-setup.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\dotnetreport-wizard.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Scripts\dotnetreport.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Views\Configure.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\DotNetReport\Dashboard.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\DotNetReport\Index.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\DotNetReport\Report.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\Setup\Index.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\Shared\_Layout.Report.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\Shared\_reportFilter.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\Shared\_reportResources.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\Shared\_ReportTemplate.cshtml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Views\_ViewImports.cshtml">
