@@ -73,7 +73,6 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
 
             var dt = new DataTable();
             var dataSettings = DataSettingsManager.LoadSettings();
-
             using (var conn = new SqlConnection(dataSettings.DataConnectionString))
             {
                 conn.Open();
@@ -156,7 +155,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 List<string> fields = new List<string>();
                 for (int i = 0; i < allSqls.Length; i++)
                 {
-                    sql = DotNetReportHelper.Decrypt(allSqls[i], _settings.PrivateApiToken);
+                    sql = DotNetReportHelper.Decrypt(HttpUtility.HtmlDecode(allSqls[i]), _settings.PrivateApiToken);
 
                     var sqlSplit = sql.Substring(0, sql.IndexOf("FROM")).Replace("SELECT", "").Trim();
                     var sqlFields = Regex.Split(sqlSplit, "], (?![^\\(]*?\\))").Where(x => x != "CONVERT(VARCHAR(3)")
@@ -193,7 +192,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                         var command = new SqlCommand(sql, conn);
                         var adapter = new SqlDataAdapter(command);
                         adapter.Fill(dtRun);
-                        dtPagedRun = (dtRun.Rows.Count > 0) ? dtPagedRun = dtRun.AsEnumerable().Skip((pageNumber - 1) * pageSize).Take(pageSize).CopyToDataTable() : dtRun;
+                        dtPagedRun = dtRun; // (dtRun.Rows.Count > 0) ? dtPagedRun = dtRun.AsEnumerable().Skip((pageNumber - 1) * pageSize).Take(pageSize).CopyToDataTable() : dtRun;
 
                         string[] series = { };
                         if (i == 0)
@@ -222,7 +221,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                                 DataRow match = null;
                                 if (fields[0].ToUpper().StartsWith("CONVERT(VARCHAR(10)")) // group by day
                                 {
-                                    match = dtPagedRun.AsEnumerable().Where(r => !string.IsNullOrEmpty(r.Field<string>(0)) && !string.IsNullOrEmpty((string)dr[0]) && Convert.ToDateTime(r.Field<string>(0)).Day == Convert.ToDateTime((string)dr[0]).Day).FirstOrDefault();
+                                    //match = dtPagedRun.AsEnumerable().Where(r => !string.IsNullOrEmpty(r.Field<string>(0)) && !string.IsNullOrEmpty((string)dr[0]) && Convert.ToDateTime(r.Field<string>(0)).Day == Convert.ToDateTime((string)dr[0]).Day).FirstOrDefault();
                                 }
                                 else if (fields[0].ToUpper().StartsWith("CONVERT(VARCHAR(3)")) // group by month/year
                                 {
@@ -230,7 +229,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                                 }
                                 else
                                 {
-                                    match = dtPagedRun.AsEnumerable().Where(r => r.Field<string>(0) == (string)dr[0]).FirstOrDefault();
+                                    //match = dtPagedRun.AsEnumerable().Where(r => r.Field<string>(0) == (string)dr[0]).FirstOrDefault();
                                 }
                                 if (match != null)
                                 {

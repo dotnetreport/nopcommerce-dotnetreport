@@ -1,9 +1,4 @@
-﻿@using System.Configuration
-@using System.Data
-
-@model Nop.Plugin.Reports.DotnetReport.Models.DotNetReportModel
-
-
+﻿@model Nop.Plugin.Reports.DotnetReport.Models.DotNetReportModel
 @{
     ViewBag.Title = "Report";
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
@@ -17,9 +12,8 @@
     Note: To allow bigger file downloads in Excel, Please increase maxRequestLength in web.config. For example, <httpRuntime maxRequestLength="1048576" />
 
 *@
-
 @Html.Partial("~/Plugins/Reports.DotnetReport/Views/Shared/_reportResources.cshtml");
-
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript">
     function printReport() {
         var printWindow = window.open("");
@@ -36,6 +30,9 @@
         }, 250);
     }
 
+    function downloadPdf() {
+        $("#downloadPdf").submit();
+    }
     function downloadExcel() {
         $("#downloadExcel").submit();
     }
@@ -59,7 +56,7 @@
         });
 
         ko.applyBindings(vm);
-        vm.LoadReport(@Model.ReportId, true);
+        vm.LoadReport(@Model.ReportId, true,"@Model.ReportSeries");
 
         $(window).resize(function(){
             vm.DrawChart();
@@ -67,7 +64,6 @@
     });
 
 </script>
-
 
 <div class="panel-group">
     <div class="panel panel-default">
@@ -90,6 +86,13 @@
                         <input type="hidden" id="connectKey" name="connectKey" data-bind="value: currentConnectKey" />
                         <input type="hidden" id="reportName" name="reportName" data-bind="value: ReportName" />
                     }
+                    @using (Html.BeginForm("DownloadPdf", "Report", FormMethod.Post, new { id = "downloadPdf" }))
+                    {
+                        <input type="hidden" id="chartdata" name="chartData" data-bind="value: ChartData" />
+                        <input type="hidden" id="reportSql" name="reportSql" data-bind="value: currentSql" />
+                        <input type="hidden" id="connectKey" name="connectKey" data-bind="value: currentConnectKey" />
+                        <input type="hidden" id="reportName" name="reportName" data-bind="value: ReportName" />
+                    }
 
                     <div class="pull-right">
                         <a href="@Url.Action("Index","DotNetReport")?folderId=@Model.SelectedFolder" class="btn btn-primary">
@@ -98,15 +101,20 @@
                         <a href="@Url.Action("Index","DotNetReport")?reportId=@Model.ReportId&folderId =@Model.SelectedFolder" class="btn btn-primary">
                             Edit Report
                         </a>
-                        <button type="button" class="btn btn-secondary" onclick="printReport();">
+                        <button type="button" class="btn btn-default" onclick="printReport();">
                             <span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print Report
                         </button>
 
                         <div class="btn-group">
-                            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="fa fa-download"></span> Export <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu">
+                                <li>
+                                    <a href="#" onclick="downloadPdf();">
+                                        <span class="fa fa-file-pdf-o"></span> Pdf
+                                    </a>
+                                </li>
                                 <li>
                                     <a href="#" onclick="downloadExcel();">
                                         <span class="fa fa-file-excel-o"></span> Excel
@@ -126,11 +134,11 @@
                     <br />
                     <div data-bind="template: {name: 'fly-filter-template'}"></div>
                     <div data-bind="if: canDrilldown">
+                        <button class="btn btn-default btn-xs" data-bind="click: ExpandAll">Expand All</button>
+                        <button class="btn btn-default btn-xs" data-bind="click: CollapseAll">Collapse All</button>
                         <br />
-                        <button class="btn btn-secondary btn-sm" data-bind="click: ExpandAll">Expand All</button>
-                        <button class="btn btn-secondary btn-sm" data-bind="click: CollapseAll">Collapse All</button>
+                        <br />
                     </div>
-                    <br />
                     <div class="report-menubar">
                         <div class="col-xs-12 col-centered" data-bind="with: pager">
                             <div class="form-inline" data-bind="visible: pages()">
@@ -138,7 +146,7 @@
                                     <span data-bind="text: 'Total Records: ' + totalRecords()"></span><br />
                                 </div>
                                 <div class="pull-left">
-                                    <button class="btn btn-secondary btn-sm" onclick="downloadExcel();" data-bind="visible: !$root.isChart() || $root.ShowDataWithGraph()" title="Export to Excel">
+                                    <button class="btn btn-default btn-sm" onclick="downloadExcel();" data-bind="visible: !$root.isChart() || $root.ShowDataWithGraph()" title="Export to Excel">
                                         <span class="fa fa-file-excel-o"></span>
                                     </button>
                                 </div>
@@ -193,7 +201,6 @@
                 </code>
                 <!-- /ko -->
             </div>
-
         </div>
     </div>
 </div>
