@@ -20,6 +20,7 @@
     <None Remove="Content\bootstrap-editable.css" />
     <None Remove="Content\datepicker.css" />
     <None Remove="Content\dotnetreport.css" />
+    <None Remove="Content\font-awesome.min.css" />
     <None Remove="Content\toastr.min.css" />
     <None Remove="plugin.json" />
     <None Remove="Scripts\bootbox.js" />
@@ -148,6 +149,11 @@
     <ProjectReference Include="..\..\Libraries\Nop.Services\Nop.Services.csproj" />
     <ProjectReference Include="..\..\Presentation\Nop.Web.Framework\Nop.Web.Framework.csproj" />
     <ClearPluginAssemblies Include="$(MSBuildProjectDirectory)\..\..\Build\ClearPluginAssemblies.proj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Content\font-awesome.min.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Jobs\" />
