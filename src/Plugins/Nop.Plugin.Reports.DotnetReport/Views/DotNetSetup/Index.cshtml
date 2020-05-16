@@ -72,7 +72,6 @@
         top: 50px;
         z-index: 999;
         background-color: white;
-        left: 0;
         width: 100%;
         margin-left: auto;
         margin-right: auto;
@@ -89,7 +88,7 @@
 <div class="panel-group">
     <div class="panel panel-default">
         <div class="panel-body">
-            <div>
+            <div class="fix-top">
                 <h2>Manage Database</h2>
                 <p>
                     You can select and manage display names for the Tables and Columns you would like to allow in .Net Report Builder.
@@ -135,7 +134,7 @@
                 <br />
             </div>
             <!-- Tab panes -->
-            <div class="fix-content">
+            <div>
                 <div class="tab-content">
                     <div role="tabpanel" class="tab-pane active" id="tablesfields">
                         <br />
@@ -179,7 +178,8 @@
                                     <label style="padding-left: 15px;" class="label-sm"><span data-bind="text: Columns().length"></span> Columns</label>
                                     <button class="btn btn-xs btn-link pull-right label-sm" data-bind="click: $parent.unselectAllColumns, visible: Selected">Unselect All</button>
                                     <button class="btn btn-xs btn-link pull-right label-sm" data-bind="click: $parent.selectAllColumns, visible: Selected">Select All</button>
-                                    <div class="list-group" data-bind="sortable: { data: Columns, options: { handle: '.sortable', cursor: 'move' }, afterMove: $parent.columnSorted }">                                      
+                                    <div class="list-group" data-bind="sortable: { data: Columns, options: { handle: '.sortable', cursor: 'move' }, afterMove: $parent.columnSorted }">
+                                        <!-- ko foreach: Columns -->
                                         <div class="list-group-item">
                                             <div class="checkbox">
                                                 <label>
@@ -197,6 +197,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <!-- /ko -->
                                     </div>
                                 </div>
                             </div>

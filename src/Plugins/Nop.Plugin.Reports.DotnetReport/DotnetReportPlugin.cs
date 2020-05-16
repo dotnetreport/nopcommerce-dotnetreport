@@ -4,7 +4,6 @@ using System.Linq;
 using Microsoft.AspNetCore.Routing;
 using Nop.Core;
 using Nop.Services.Common;
-//using Nop.Services.DotnetReports;
 using Nop.Services.Plugins;
 using Nop.Web.Framework;
 using Nop.Web.Framework.Menu;
@@ -28,7 +27,7 @@ namespace Nop.Plugin.Reports.DotnetReport
         #endregion
         public override string GetConfigurationPageUrl()
         {
-            return $"{_webHelper.GetStoreLocation()}Admin/Setup/Configure";
+            return $"{_webHelper.GetStoreLocation()}Admin/DotNetSetup/Configure";
         }
 
         /// <summary>

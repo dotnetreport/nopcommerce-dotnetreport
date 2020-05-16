@@ -24,7 +24,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
 {
     [AuthorizeAdmin]
     [Area(AreaNames.Admin)]
-    public class SetupController : BasePluginController
+    public class DotNetSetupController : BasePluginController
     {
         private readonly DotNetReportConfigSettings _settings;
         private readonly IPermissionService _permissionService;
@@ -32,7 +32,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
         private readonly ILocalizationService _localizationService;
         private readonly INotificationService _notificationService;
         private readonly IDbContext _dbContext;
-        public SetupController(
+        public DotNetSetupController(
             DotNetReportConfigSettings settings,
             IPermissionService permissionService,
             ISettingService settingService, ILocalizationService localizationService,
@@ -89,8 +89,10 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             var connect = GetConnection(databaseApiKey);
             var tables = new List<TableViewModel>();
 
-            //tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
+            tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
             tables.AddRange(await GetTables("VIEW", connect.AccountApiKey, connect.DatabaseApiKey));
+
+            tables = tables.Take(10).ToList();
 
             var model = new ManageViewModel
             {
@@ -100,7 +102,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 Tables = tables
             };
 
-            return View("~/Plugins/Reports.DotnetReport/Views/Setup/Index.cshtml", model);
+            return View("~/Plugins/Reports.DotnetReport/Views/DotNetSetup/Index.cshtml", model);
         }
 
         #region "Private Methods"
@@ -115,7 +117,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             };
         }
 
-        private async Task<string> GetConnectionString(ConnectViewModel connect)
+        private string GetConnectionString(ConnectViewModel connect)
         {
             using (var client = new HttpClient())
             {                
@@ -267,7 +269,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             if (!string.IsNullOrEmpty(accountKey) && !string.IsNullOrEmpty(dataConnectKey))
                 currentTables = await GetApiTables(accountKey, dataConnectKey);
 
-            var connString = await GetConnectionString(GetConnection(dataConnectKey));
+            var connString = GetConnectionString(GetConnection(dataConnectKey));
             using (var conn = new SqlConnection(connString))
             {
                 // open the connection to the database 

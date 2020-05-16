@@ -41,7 +41,7 @@
     <None Remove="Views\DotNetReport\Dashboard.cshtml" />
     <None Remove="Views\DotNetReport\Index.cshtml" />
     <None Remove="Views\DotNetReport\Report.cshtml" />
-    <None Remove="Views\Setup\Index.cshtml" />
+    <None Remove="Views\DotNetSetup\Index.cshtml" />
     <None Remove="Views\Shared\_Layout.Report.cshtml" />
     <None Remove="Views\Shared\_reportFilter.cshtml" />
     <None Remove="Views\Shared\_reportResources.cshtml" />
@@ -121,7 +121,7 @@
     <Content Include="Views\DotNetReport\Report.cshtml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Views\Setup\Index.cshtml">
+    <Content Include="Views\DotNetSetup\Index.cshtml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Views\Shared\_Layout.Report.cshtml">
