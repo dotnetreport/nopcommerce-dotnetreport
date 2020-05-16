@@ -89,7 +89,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             var connect = GetConnection(databaseApiKey);
             var tables = new List<TableViewModel>();
 
-            tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
+            //tables.AddRange(await GetTables("BASE TABLE", connect.AccountApiKey, connect.DatabaseApiKey));
             tables.AddRange(await GetTables("VIEW", connect.AccountApiKey, connect.DatabaseApiKey));
 
             var model = new ManageViewModel
@@ -118,18 +118,10 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
         private async Task<string> GetConnectionString(ConnectViewModel connect)
         {
             using (var client = new HttpClient())
-            {
-                var response = await client.GetAsync(string.Format("{0}/ReportApi/GetDataConnectKey?account={1}&dataConnect={2}", connect.ApiUrl, connect.AccountApiKey, connect.DatabaseApiKey));
-
-                response.EnsureSuccessStatusCode();
-
-                var content = await response.Content.ReadAsStringAsync();
+            {                
                 var dataSettings = DataSettingsManager.LoadSettings();
                 var connString = dataSettings.DataConnectionString;
                 connString = connString.Replace("Trusted_Connection=True", "");
-              //  connString = connString.Replace("Integrated Security=False;Persist Security Info=False;", "");
-                //if (!connString.ToLower().StartsWith("provider"))
-                    //connString =  connString + "providerName=sqloledb;";
 
                 return connString;
             }
