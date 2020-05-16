@@ -138,53 +138,130 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             var pageSize = 50;
             string sortBy = data.sortBy;
             bool desc = data.desc;
+            string reportSeries = data.reportSeries;
 
-
-            var sql = DotNetReportHelper.Decrypt(HttpUtility.HtmlDecode(reportSql), _settings.PrivateApiToken);
+            var sql = "";
 
             try
             {
-                if (!string.IsNullOrEmpty(sortBy))
+                if (string.IsNullOrEmpty(reportSql))
                 {
-                    if (sortBy.StartsWith("DATENAME(MONTH, "))
-                        sortBy = sortBy.Replace("DATENAME(MONTH, ", "MONTH(");
-                    if (sortBy.StartsWith("MONTH(") && sortBy.Contains(")) +") && sql.Contains("Group By"))
-                        sortBy = sortBy.Replace("MONTH(", "CONVERT(VARCHAR(3), DATENAME(MONTH, ");
-                    sql = sql.Substring(0, sql.IndexOf("ORDER BY")) + "ORDER BY " + sortBy + (desc ? " DESC" : "");
+                    throw new Exception("Query not found");
                 }
-
-                // Execute sql
+                var allSqls = reportSql.Split(new string[] { "%2C" }, StringSplitOptions.RemoveEmptyEntries);
                 var dt = new DataTable();
                 var dtPaged = new DataTable();
-                var dataSettings = DataSettingsManager.LoadSettings();
-                using (var conn = new SqlConnection(dataSettings.DataConnectionString))
+                var dtCols = 0;
+
+                List<string> fields = new List<string>();
+                for (int i = 0; i < allSqls.Length; i++)
                 {
-                    conn.Open();
-                    var command = new SqlCommand(sql, conn);
-                    var adapter = new SqlDataAdapter(command);
+                    sql = DotNetReportHelper.Decrypt(allSqls[i], _settings.PrivateApiToken);
 
-                    adapter.Fill(dt);
+                    var sqlSplit = sql.Substring(0, sql.IndexOf("FROM")).Replace("SELECT", "").Trim();
+                    var sqlFields = Regex.Split(sqlSplit, "], (?![^\\(]*?\\))").Where(x => x != "CONVERT(VARCHAR(3)")
+                        .Select(x => x.EndsWith("]") ? x : x + "]")
+                        .ToList();
+
+                    if (!String.IsNullOrEmpty(sortBy))
+                    {
+                        if (sortBy.StartsWith("DATENAME(MONTH, "))
+                        {
+                            sortBy = sortBy.Replace("DATENAME(MONTH, ", "MONTH(");
+                        }
+                        if (sortBy.StartsWith("MONTH(") && sortBy.Contains(")) +") && sql.Contains("Group By"))
+                        {
+                            sortBy = sortBy.Replace("MONTH(", "CONVERT(VARCHAR(3), DATENAME(MONTH, ");
+                        }
+                        if (!sql.Contains("ORDER BY"))
+                        {
+                            sql = sql + "ORDER BY " + sortBy + (desc ? " DESC" : "");
+                        }
+                        else
+                        {
+                            sql = sql.Substring(0, sql.IndexOf("ORDER BY")) + "ORDER BY " + sortBy + (desc ? " DESC" : "");
+                        }
+                    }
+
+                    // Execute sql
+                    var dtRun = new DataTable();
+                    var dtPagedRun = new DataTable();
+                    var dataSettings = DataSettingsManager.LoadSettings();
+                    using (var conn = new SqlConnection(dataSettings.DataConnectionString))
+                    {
+                        conn.Open();
+                        var command = new SqlCommand(sql, conn);
+                        var adapter = new SqlDataAdapter(command);
+                        adapter.Fill(dtRun);
+                        dtPagedRun = (dtRun.Rows.Count > 0) ? dtPagedRun = dtRun.AsEnumerable().Skip((pageNumber - 1) * pageSize).Take(pageSize).CopyToDataTable() : dtRun;
+
+                        string[] series = { };
+                        if (i == 0)
+                        {
+                            dt = dtRun;
+                            dtPaged = dtPagedRun;
+                            dtCols = dtRun.Columns.Count;
+                            fields.AddRange(sqlFields);
+                        }
+                        else if (i > 0)
+                        {
+                            // merge in to dt
+                            if (!string.IsNullOrEmpty(reportSeries))
+                                series = reportSeries.Split(new string[] { "%2C" }, StringSplitOptions.RemoveEmptyEntries);
+
+                            var j = 1;
+                            while (j < dtPagedRun.Columns.Count)
+                            {
+                                var col = dtPagedRun.Columns[j++];
+                                dtPaged.Columns.Add($"{col.ColumnName} ({series[i - 1]})", col.DataType);
+                                fields.Add(sqlFields[j - 1]);
+                            }
+
+                            foreach (DataRow dr in dtPaged.Rows)
+                            {
+                                DataRow match = null;
+                                if (fields[0].ToUpper().StartsWith("CONVERT(VARCHAR(10)")) // group by day
+                                {
+                                    match = dtPagedRun.AsEnumerable().Where(r => !string.IsNullOrEmpty(r.Field<string>(0)) && !string.IsNullOrEmpty((string)dr[0]) && Convert.ToDateTime(r.Field<string>(0)).Day == Convert.ToDateTime((string)dr[0]).Day).FirstOrDefault();
+                                }
+                                else if (fields[0].ToUpper().StartsWith("CONVERT(VARCHAR(3)")) // group by month/year
+                                {
+
+                                }
+                                else
+                                {
+                                    match = dtPagedRun.AsEnumerable().Where(r => r.Field<string>(0) == (string)dr[0]).FirstOrDefault();
+                                }
+                                if (match != null)
+                                {
+                                    j = 1;
+                                    while (j < dtCols)
+                                    {
+                                        dr[j + i + dtCols - 2] = match[j];
+                                        j++;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-
-                dtPaged = dt.Rows.Count > 0 ? dtPaged = dt.AsEnumerable().Skip((pageNumber - 1) * pageSize).Take(pageSize).CopyToDataTable() : dt;
 
                 var model = new DotNetReportResultModel
                 {
-                    ReportData = DataTableToDotNetReportDataModel(dtPaged, sql),
-                    Warnings = GetWarnings(sql),
-                    ReportSql = sql,
+                    ReportData = DataTableToDotNetReportDataModel(dtPaged, fields),
+                    Warnings = GetWarnings(allSqls[0]),
+                    ReportSql = allSqls[0],
                     ReportDebug = Request.Host.Host.Contains("localhost"),
                     Pager = new DotNetReportPagerModel
                     {
                         CurrentPage = pageNumber,
                         PageSize = pageSize,
                         TotalRecords = dt.Rows.Count,
-                        TotalPages = dt.Rows.Count / pageSize + 1
+                        TotalPages = (int)((dt.Rows.Count / pageSize) + 1)
                     }
                 };
 
                 return Ok(model);
-
             }
 
             catch (Exception ex)
@@ -365,7 +442,8 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             return "";
         }
 
-        private DotNetReportDataModel DataTableToDotNetReportDataModel(DataTable dt, string sql)
+
+        private DotNetReportDataModel DataTableToDotNetReportDataModel(DataTable dt, List<string> sqlFields)
         {
             var model = new DotNetReportDataModel
             {
@@ -373,10 +451,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 Rows = new List<DotNetReportDataRowModel>()
             };
 
-            sql = sql.Substring(0, sql.IndexOf("FROM")).Replace("SELECT", "").Trim();
-            var sqlFields = Regex.Split(sql, "], (?![^\\(]*?\\))").Where(x => x != "CONVERT(VARCHAR(3)").ToArray();
-
-            var i = 0;
+            int i = 0;
             foreach (DataColumn col in dt.Columns)
             {
                 var sqlField = sqlFields[i++];
@@ -397,6 +472,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
 
                 foreach (DataColumn col in dt.Columns)
                 {
+
                     items.Add(new DotNetReportDataRowItemModel
                     {
                         Column = model.Columns[i],
@@ -405,6 +481,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                         LabelValue = GetLabelValue(col, row)
                     });
                     i += 1;
+
                 }
 
                 model.Rows.Add(new DotNetReportDataRowModel

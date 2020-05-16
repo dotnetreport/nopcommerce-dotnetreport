@@ -353,6 +353,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Models
         /// </summary>
         public static string Decrypt(string encryptedText, string privateKey)
         {
+            encryptedText = encryptedText.Split(new string[] { "%2C" }, StringSplitOptions.RemoveEmptyEntries)[0];
             var initVectorBytes = Encoding.ASCII.GetBytes("yk0z8f39lgpu70gi"); // PLESE DO NOT CHANGE THIS KEY
             var keysize = 256;
 
