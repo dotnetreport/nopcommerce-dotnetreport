@@ -68,9 +68,10 @@
     }
 
     .fix-top {
-        position: fixed;
+        /*position: fixed;*/
+        position: initial;
         top: 50px;
-        z-index: 999;
+        /*z-index: 999;*/
         background-color: white;
         width: 100%;
         margin-left: auto;
@@ -79,7 +80,7 @@
     }
 
     .fix-content {
-        padding-top: 180px;
+        padding-top: 170px;
         width: 100% !important;
         left: 0;
     }
@@ -88,7 +89,7 @@
 <div class="panel-group">
     <div class="panel panel-default">
         <div class="panel-body">
-            <div>
+            <div class="fix-top">
                 <h2>Manage Database</h2>
                 <p>
                     You can select and manage display names for the Tables and Columns you would like to allow in .Net Report Builder.
