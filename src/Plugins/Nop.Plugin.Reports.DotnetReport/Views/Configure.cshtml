@@ -5,22 +5,20 @@
     Layout = "_ConfigurePlugin";
 }
 
-
-
-
 <form asp-controller="DotNetSetup" asp-action="Configure" method="post">
     <div class="panel-group">
         <div class="panel panel-default">
             <div class="panel-body">
                 <div class="form-group">
                     <div class="col-md-12">
-                        @Html.ActionLink("Go to Setup", "Index", "DotNetSetup", new { Area = "Admin" }, new { @class = "btn btn-default pull-right" })
+                        <div class="alert alert-info">
+                            Please enter your dotnet Report Account information below. If you do not have an account, please <a href="https://dotnetreport.com/account/register" target="_blank">Sign up for a Free account</a>.
+                        </div>
                     </div>
                 </div>
-                <br />
                 <div class="form-group">
-                    <div class="col-md-3">
-                        <nop-label asp-for="ApiUrl" />
+                    <div class="col-md-3 text-right">
+                        <label class="control-label">Report API Url</label>
                     </div>
                     <div class="col-md-9">
                         <nop-editor asp-for="ApiUrl" />
@@ -28,8 +26,8 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <div class="col-md-3">
-                        <nop-label asp-for="AccountApiToken">  Report Account Key</nop-label>
+                    <div class="col-md-3 text-right">
+                        <label class="control-label">Report Account Key</label>
                     </div>
                     <div class="col-md-9">
                         <nop-editor asp-for="AccountApiToken" />
@@ -37,8 +35,8 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <div class="col-md-3">
-                        <nop-label asp-for="DataConnectApiToken"> Report Data Connection Key </nop-label>
+                    <div class="col-md-3 text-right">
+                        <label class="control-label">Data Connection Key</label>
                     </div>
                     <div class="col-md-9">
                         <nop-editor asp-for="DataConnectApiToken" />
@@ -46,8 +44,8 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <div class="col-md-3">
-                        <nop-label asp-for="PrivateApiToken" >  Private Account Key </nop-label>
+                    <div class="col-md-3 text-right">
+                        <label class="control-label">Private Account Key</label>
                     </div>
                     <div class="col-md-9">
                         <nop-editor asp-for="PrivateApiToken" />
@@ -57,6 +55,7 @@
                 <div class="form-group">
                     <div class="col-md-9 col-md-offset-3">
                         <input type="submit" name="save" class="btn bg-blue" value="@T("Admin.Common.Save")" />
+                        @Html.ActionLink("Go to Setup", "Index", "DotNetSetup", new { Area = "Admin" }, new { @class = "btn bg-blue pull-right" })
                     </div>
                 </div>
             </div>
