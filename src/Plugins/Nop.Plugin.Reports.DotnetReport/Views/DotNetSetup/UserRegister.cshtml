@@ -1,0 +1,84 @@
+﻿@model Nop.Plugin.Reports.DotnetReport.Models.DotNetReportUserRegister
+
+@inject Nop.Core.IWebHelper webHelper
+
+@{
+    //Layout = "_ConfigurePlugin";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+
+<div class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3>  User Registration  </h3>
+        </div>
+        <div class="panel-body">
+
+            <form asp-controller="DotNetSetup" asp-action="UserRegister" method="post">
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            @Html.ActionLink("Go to Configuration", "Configure", "DotNetSetup", new { Area = "Admin" , id = Guid.NewGuid() }, new { @class = "btn btn-default pull-right" })
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-md-2">
+                            <nop-label asp-for="Email" />
+                        </div>
+                        <div class="col-md-6">
+                            <nop-editor asp-for="Email" />
+                            <span asp-validation-for="Email"></span>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-md-2">
+                            <nop-label asp-for="Name" />
+                        </div>
+                        <div class="col-md-6">
+                            <nop-editor asp-for="Name" />
+                            <span asp-validation-for="Name"></span>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-md-2">
+                            <nop-label asp-for="BusinessName" />
+                        </div>
+                        <div class="col-md-6">
+                            <nop-editor asp-for="BusinessName" />
+                            <span asp-validation-for="BusinessName"></span>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="row">
+                    <div class="form-group">
+                        <div class="col-md-2">
+                            <nop-label asp-for="Phone" />
+                        </div>
+                        <div class="col-md-6">
+                            <nop-editor asp-for="Phone" />
+                            <span asp-validation-for="Phone"></span>
+                        </div>
+                    </div>
+                </div>
+                <br />
+                <div class="form-group">
+                    <div class="col-md-6 col-md-offset-2">
+                        <input type="submit" name="save" class="btn bg-blue" value="Register" />
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>

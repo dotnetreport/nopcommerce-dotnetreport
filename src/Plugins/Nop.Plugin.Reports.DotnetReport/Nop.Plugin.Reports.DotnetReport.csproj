@@ -14,6 +14,11 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Views\Setup\**" />
+    <EmbeddedResource Remove="Views\Setup\**" />
+    <None Remove="Views\Setup\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Remove="Jobs\ReportJob.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -50,6 +55,7 @@
     <None Remove="Views\DotNetReport\Index.cshtml" />
     <None Remove="Views\DotNetReport\Report.cshtml" />
     <None Remove="Views\DotNetSetup\Index.cshtml" />
+    <None Remove="Views\DotNetSetup\UserRegister.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap-editable.css">
@@ -232,6 +238,9 @@
     <Content Include="Views\DotNetReport\Report.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Views\DotNetSetup\UserRegister.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Views\DotNetSetup\Index.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -262,11 +271,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Scripts\dotnetreport-wizard.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Views\Setup\Index.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

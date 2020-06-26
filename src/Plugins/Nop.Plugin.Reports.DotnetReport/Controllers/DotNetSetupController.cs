@@ -32,6 +32,10 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
         private readonly ILocalizationService _localizationService;
         private readonly INotificationService _notificationService;
         private readonly IDbContext _dbContext;
+        private readonly List<string> DisplayTables = new List<string> { "Campaign", "ActivityLog", 
+            "BlogPost", "Customer","Log","News", "Order", "OrderItem", "Product", "ReturnRequest",
+            "Shipment", "ShipmentItem", "ShippingByWeightByTotalRecord", "Vendor", "Warehouse" };
+        private readonly List<string> DisplayViews = new List<string> {  };
         public DotNetSetupController(
             DotNetReportConfigSettings settings,
             IPermissionService permissionService,
@@ -46,7 +50,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             _dbContext = dbContext;
         }
 
-        public IActionResult Configure()
+        public IActionResult Configure(Guid id)
         {
             if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
                 return AccessDeniedView();
@@ -58,7 +62,8 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 DataConnectApiToken = _settings.DataConnectApiToken,
                 PrivateApiToken = _settings.PrivateApiToken
             };
-            
+            if(string.IsNullOrEmpty(model.ApiUrl) && id == Guid.Empty)
+                return RedirectToAction("UserRegister");
             return View("~/Plugins/Reports.DotnetReport/Views/Configure.cshtml", model);
         }
 
@@ -70,7 +75,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 return Content("Access denied");
 
             if (!ModelState.IsValid)
-                return Configure();
+                return Configure(Guid.Empty);
             //save settings
             _settings.ApiUrl = model.ApiUrl;
             _settings.AccountApiToken = model.AccountApiToken;
@@ -79,7 +84,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             _settingService.SaveSetting(_settings);
             _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Plugins.Saved"));
 
-            return Configure();
+            return Configure(Guid.Empty);
            // return Json(new { Result = true });
         }
 
@@ -103,6 +108,29 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             };
 
             return View("~/Plugins/Reports.DotnetReport/Views/DotNetSetup/Index.cshtml", model);
+        }
+
+        public async Task<IActionResult> UserRegister()
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
+                return AccessDeniedView();
+
+            return View("~/Plugins/Reports.DotnetReport/Views/DotNetSetup/UserRegister.cshtml");
+        }
+
+        [HttpPost]
+        [AdminAntiForgery]
+        public async Task<IActionResult> UserRegister(DotNetReportUserRegister model)
+        {
+            using (var client = new HttpClient())
+            {
+                var response = await client.PostAsJsonAsync("/api/userregister", model)
+                    .ContinueWith((postTask) => postTask.Result.EnsureSuccessStatusCode());
+    
+                var stringContent = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject(stringContent);
+                return Ok(result);
+            }
         }
 
         #region "Private Methods"
@@ -272,6 +300,7 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
             var connString = GetConnectionString(GetConnection(dataConnectKey));
             using (var conn = new SqlConnection(connString))
             {
+              
                 // open the connection to the database 
                 conn.Open();
 
@@ -282,43 +311,46 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                 for (var i = 0; i < schemaTable.Rows.Count; i++)
                 {
                     var tableName = schemaTable.Rows[i].ItemArray[2].ToString();
-
-                    // see if this table is already in database
-                    var matchTable = currentTables.FirstOrDefault(x => x.TableName.ToLower() == tableName.ToLower());
-                    if (matchTable != null)
-                        matchTable.Columns = await GetApiFields(accountKey, dataConnectKey, matchTable.Id);
-                   
-                    var table = new TableViewModel
+                    if (DisplayTables.Contains(tableName))
                     {
-                        Id = matchTable != null ? matchTable.Id : 0,
-                        TableName = matchTable != null ? matchTable.TableName : tableName,
-                        DisplayName = matchTable != null ? matchTable.DisplayName : tableName,
-                        IsView = type == "VIEW",
-                        Selected = matchTable != null,
-                        Columns = new List<ColumnViewModel>(),
-                        AllowedRoles = matchTable != null ? matchTable.AllowedRoles : new List<string>()
-                    };
+                        // see if this table is already in database
+                        var matchTable = currentTables.FirstOrDefault(x => x.TableName.ToLower() == tableName.ToLower());
+                        if (matchTable != null)
+                            matchTable.Columns = await GetApiFields(accountKey, dataConnectKey, matchTable.Id);
 
-                  //  var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
-                    var idx = 0;
-                    string[] restrictionsColumns = new string[4];
-                    restrictionsColumns[2] = tableName;
-                    DataTable schemaColumns = conn.GetSchema("Columns", restrictionsColumns);
-                    DataTable schemaPrimaryKey = conn.GetSchema("IndexColumns", restrictionsColumns);
-                    DataTable schemaForeignKeys = conn.GetSchema("ForeignKeys", restrictionsColumns);
-                    foreach (DataRow rowColumn in schemaColumns.Rows)
+                        var table = new TableViewModel
                         {
-                        string columnName = rowColumn[3].ToString();
-                        
-                        var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == columnName.ToLower()) : null;
+                            Id = matchTable != null ? matchTable.Id : 0,
+                            TableName = matchTable != null ? matchTable.TableName : tableName,
+                            DisplayName = matchTable != null ? matchTable.DisplayName : tableName,
+                            IsView = type == "VIEW",
+                            //Selected = matchTable != null,
+                            Selected = true,
+                            Columns = new List<ColumnViewModel>(),
+                            AllowedRoles = matchTable != null ? matchTable.AllowedRoles : new List<string>()
+                        };
+
+                        //  var dtField = conn.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, tableName });
+                        var idx = 0;
+                        string[] restrictionsColumns = new string[4];
+                        restrictionsColumns[2] = tableName;
+                        DataTable schemaColumns = conn.GetSchema("Columns", restrictionsColumns);
+                        DataTable schemaPrimaryKey = conn.GetSchema("IndexColumns", restrictionsColumns);
+                        DataTable schemaForeignKeys = conn.GetSchema("ForeignKeys", restrictionsColumns);
+                        foreach (DataRow rowColumn in schemaColumns.Rows)
+                        {
+                            string columnName = rowColumn[3].ToString();
+
+                            var matchColumn = matchTable != null ? matchTable.Columns.FirstOrDefault(x => x.ColumnName.ToLower() == columnName.ToLower()) : null;
                             var column = new ColumnViewModel
                             {
                                 ColumnName = matchColumn != null ? matchColumn.ColumnName : columnName.ToString(),
                                 DisplayName = matchColumn != null ? matchColumn.DisplayName : columnName.ToString(),
-                               // PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : rowColumn[6].ToString().ToLower().EndsWith("id") && idx == 0,
+                                // PrimaryKey = matchColumn != null ? matchColumn.PrimaryKey : rowColumn[6].ToString().ToLower().EndsWith("id") && idx == 0,
                                 DisplayOrder = matchColumn != null ? matchColumn.DisplayOrder : idx++,
                                 FieldType = matchColumn != null ? matchColumn.FieldType : rowColumn[7].ToString(),
-                                AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>()
+                                AllowedRoles = matchColumn != null ? matchColumn.AllowedRoles : new List<string>(),
+                                Selected = true,
                             };
 
                             if (matchColumn != null)
@@ -335,28 +367,29 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
                                 column.Selected = true;
                             }
 
-                        if (!table.Columns.Any(x=>x.PrimaryKey = true))
-                        {
-                            foreach (System.Data.DataRow rowPrimaryKey in schemaPrimaryKey.Rows)
+                            if (!table.Columns.Any(x => x.PrimaryKey = true))
                             {
-                                string indexName = rowPrimaryKey[2].ToString();
+                                foreach (System.Data.DataRow rowPrimaryKey in schemaPrimaryKey.Rows)
+                                {
+                                    string indexName = rowPrimaryKey[2].ToString();
 
-                                if (indexName.IndexOf("PK_") != -1)
-                                    column.PrimaryKey = true;
+                                    if (indexName.IndexOf("PK_") != -1)
+                                        column.PrimaryKey = true;
+                                }
                             }
-                        }
-                        if (!table.Columns.Any(x => x.ForeignKey = true))
-                        {
-                            foreach (System.Data.DataRow rowFK in schemaForeignKeys.Rows)
+                            if (!table.Columns.Any(x => x.ForeignKey = true))
                             {
-                                column.ForeignKey = true;
-                                column.ForeignKeyField = rowFK[2].ToString();
+                                foreach (System.Data.DataRow rowFK in schemaForeignKeys.Rows)
+                                {
+                                    column.ForeignKey = true;
+                                    column.ForeignKeyField = rowFK[2].ToString();
+                                }
                             }
+                            table.Columns.Add(column);
                         }
-                        table.Columns.Add(column);
-                        }
-                    table.Columns = table.Columns.OrderBy(x => x.DisplayOrder).ToList();
-                    tables.Add(table);
+                        table.Columns = table.Columns.OrderBy(x => x.DisplayOrder).ToList();
+                        tables.Add(table);
+                    }
                 }
 
                 conn.Close();

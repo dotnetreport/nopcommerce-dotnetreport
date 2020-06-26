@@ -167,7 +167,8 @@
 
 	self.LoadDataConnections = function () {
 
-		ajaxcall({
+    ajaxcall({
+      crossDomain: true,
 			url: options.getDataConnectionsUrl,
 			type: 'POST',
 			data: JSON.stringify({
@@ -183,7 +184,8 @@
 	self.LoadJoins = function () {
 		// Load and setup Relations
 
-		ajaxcall({
+    ajaxcall({
+      crossDomain: true,
 			url: options.getRelationsUrl,
 			type: 'POST',
 			data: JSON.stringify({
