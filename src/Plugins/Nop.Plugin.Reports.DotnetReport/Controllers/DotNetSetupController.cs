@@ -124,12 +124,43 @@ namespace Nop.Plugin.Reports.DotnetReport.Controllers
         {
             using (var client = new HttpClient())
             {
-                var response = await client.PostAsJsonAsync("/api/userregister", model)
+                var response = await client.PostAsJsonAsync("/api/dotnetreportapi/userregister", model)
                     .ContinueWith((postTask) => postTask.Result.EnsureSuccessStatusCode());
     
                 var stringContent = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject(stringContent);
+                var result = JsonConvert.DeserializeObject<DotNetReportConfig>(stringContent);
+                _settings.ApiUrl = result.ApiUrl;
+                _settings.AccountApiToken = result.AccountApiToken;
+                _settings.DataConnectApiToken = result.DataConnectApiToken;
+                _settings.PrivateApiToken = result.PrivateApiToken;
+                _settingService.SaveSetting(_settings);
                 return Ok(result);
+            }
+        }
+
+
+        public async Task<IActionResult> DataConnection()
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
+                return AccessDeniedView();
+
+            return  View("~/Plugins/Reports.DotnetReport/Views/DotNetSetup/DataConnection.cshtml");
+        }
+        [HttpPost]
+        public async Task<IActionResult> DataConnection(DotNetReportDataConnection model)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.AccessAdminPanel))
+                return AccessDeniedView();
+            using (var client = new HttpClient())
+            {
+                var response = await client.PostAsJsonAsync("/api/dotnetreportapi/dataconnection", model)
+                    .ContinueWith((postTask) => postTask.Result.EnsureSuccessStatusCode());
+
+                var stringContent = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject(stringContent);
+                _notificationService.SuccessNotification(_localizationService.GetResource("Admin.Plugins.Saved"));
+
+                return await DataConnection();
             }
         }
 

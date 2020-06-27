@@ -54,6 +54,7 @@
     <None Remove="Views\DotNetReport\Dashboard.cshtml" />
     <None Remove="Views\DotNetReport\Index.cshtml" />
     <None Remove="Views\DotNetReport\Report.cshtml" />
+    <None Remove="Views\DotNetSetup\DataConnection.cshtml" />
     <None Remove="Views\DotNetSetup\Index.cshtml" />
     <None Remove="Views\DotNetSetup\UserRegister.cshtml" />
   </ItemGroup>
@@ -236,6 +237,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Views\DotNetReport\Report.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Views\DotNetSetup\DataConnection.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Views\DotNetSetup\UserRegister.cshtml">
